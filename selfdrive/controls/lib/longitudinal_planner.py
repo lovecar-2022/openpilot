@@ -2,6 +2,7 @@
 import math
 import numpy as np
 from common.numpy_fast import clip, interp
+import time
 
 import cereal.messaging as messaging
 from common.conversions import Conversions as CV
@@ -23,6 +24,16 @@ A_CRUISE_MAX_BP = [0., 10.0, 25., 40.]
 # Lookup table for turns
 _A_TOTAL_MAX_V = [1.7, 3.2]
 _A_TOTAL_MAX_BP = [20., 40.]
+
+# 経過時間取得
+now_time = time.time()
+buf_time = time.time()
+
+# 状態フラグ(state_flag=0 : v_ego - v_crise < 5 ,state_flag=1 : v_ego - v_crise >= 5 )
+state_flag = 0
+
+#
+buf_v_cruise = 0.0
 
 
 def get_max_accel(v_ego):
@@ -82,6 +93,29 @@ class LongitudinalPlanner:
     v_cruise_kph = sm['controlsState'].vCruise
     v_cruise_kph = min(v_cruise_kph, V_CRUISE_MAX)
     v_cruise = v_cruise_kph * CV.KPH_TO_MS
+
+    #２秒以上v_egoがv_cruiseよりも２MS大きいとき、v_cruiseをv_egoに一致させる
+    now_time = time.time()
+
+    # buf_v_cruiseがv_cruiseよりも大きい時,v_cruiseを上書きする
+    if buf_v_cruise > v_crise:
+      v_cruise = buf_v_cruise
+
+    if state_flag == 0 :
+      if (v_ego - v_cruise) >= 5 :
+        state_flag = 1
+        buf_time = time.time()
+    else:
+      if (v_ego - v_cruise) < 5:
+        state_flag = 0
+      else:
+        if now_time - buf_time > 2:
+          buf_v_cruise = v_ego
+
+    #ドライバがブレーキを踏んだ時 V_cruiseを元に戻す（buf_v_cruiseを0に戻す）
+    if sm['carState'].brakePressed and buf_v_cruise > 0.0:
+      buf_v_cruise = 0.0
+      
 
     long_control_off = sm['controlsState'].longControlState == LongCtrlState.off
     force_slow_decel = sm['controlsState'].forceDecel
