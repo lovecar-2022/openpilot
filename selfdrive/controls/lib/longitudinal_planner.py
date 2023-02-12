@@ -58,6 +58,7 @@ class LongitudinalPlanner:
     self.a_desired_trajectory = np.zeros(CONTROL_N)
     self.j_desired_trajectory = np.zeros(CONTROL_N)
     self.solverExecutionTime = 0.0
+    self.threshold_prompt = 6. / 11.
 
   @staticmethod
   def parse_model(model_msg, model_error):
@@ -82,6 +83,12 @@ class LongitudinalPlanner:
     v_cruise_kph = sm['controlsState'].vCruise
     v_cruise_kph = min(v_cruise_kph, V_CRUISE_MAX)
     v_cruise = v_cruise_kph * CV.KPH_TO_MS
+
+    #ドライバーモニターカメラでオレンジの警告が出た場合、設定速度を10km/h小さくする
+    if sm['driverMonitoringState'].awarenessStatus <= 0:
+      v_cruise = v_cruise - 4
+    elif sm['driverMonitoringState'].awarenessStatus <= self,threshold_prompt:
+      v_cruise = v_cruise - 2
 
     long_control_off = sm['controlsState'].longControlState == LongCtrlState.off
     force_slow_decel = sm['controlsState'].forceDecel
