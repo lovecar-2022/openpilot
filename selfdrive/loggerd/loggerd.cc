@@ -270,7 +270,7 @@ int main(int argc, char** argv) {
     //assert(ret == 0);
   }
 
-  loggerd_thread();
+  // loggerd_thread();
 
   return 0;
 }

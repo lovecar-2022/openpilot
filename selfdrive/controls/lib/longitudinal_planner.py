@@ -87,7 +87,7 @@ class LongitudinalPlanner:
     #ドライバーモニターカメラでオレンジの警告が出た場合、設定速度を10km/h小さくする
     if sm['driverMonitoringState'].awarenessStatus <= 0:
       v_cruise = v_cruise - 4
-    elif sm['driverMonitoringState'].awarenessStatus <= self,threshold_prompt:
+    elif sm['driverMonitoringState'].awarenessStatus <= self.threshold_prompt:
       v_cruise = v_cruise - 2
 
     long_control_off = sm['controlsState'].longControlState == LongCtrlState.off
